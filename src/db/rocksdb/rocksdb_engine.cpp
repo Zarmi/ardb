@@ -336,8 +336,9 @@ OP_NAMESPACE_BEGIN
     {
         private:
             Data ns;
+            int num_levels;
         public:
-            RocksDBCompactionFilter(RocksDBEngine* engine, const rocksdb::CompactionFilter::Context& context)
+            RocksDBCompactionFilter(RocksDBEngine* engine, const rocksdb::CompactionFilter::Context& context, int num_levels):num_levels(num_levels)
             {
                 ns = engine->GetNamespaceByColumnFamilyId(context.column_family_id);
             }
@@ -354,6 +355,9 @@ OP_NAMESPACE_BEGIN
                 /*
                  * do not do filter for slave
                  */
+                if (level == num_levels - 2)
+                    return true;
+
                 if (!g_db->GetConf().master_host.empty())
                 {
                     return false;
@@ -390,18 +394,12 @@ OP_NAMESPACE_BEGIN
                     {
                         return false;
                     }
-                    if (meta.GetTTL() > 0 && meta.GetTTL() <= get_current_epoch_millis())
-                    {
-                        g_db->AddExpiredKey(ns, k.GetKey());
-                        if (meta.GetType() != KEY_STRING)
-                        {
-                            return false;
-                        }
-                        else
-                        {
-                            return true;
-                        }
-                    }
+                    
+                    uint64 ttl = meta.GetTTL();
+                    uint64 epoch = get_current_epoch_millis();
+                    if (ttl != 0 && ttl <= epoch)
+                        return true;
+                      
                 }
                 return false;
             }
@@ -410,13 +408,11 @@ OP_NAMESPACE_BEGIN
     struct RocksDBCompactionFilterFactory: public rocksdb::CompactionFilterFactory
     {
             RocksDBEngine* engine;
-            RocksDBCompactionFilterFactory(RocksDBEngine* e) :
-                    engine(e)
-            {
-            }
-            std::unique_ptr<rocksdb::CompactionFilter> CreateCompactionFilter(const rocksdb::CompactionFilter::Context& context)
-            {
-                return std::unique_ptr<rocksdb::CompactionFilter>(new RocksDBCompactionFilter(engine, context));
+            int num_levels;
+            RocksDBCompactionFilterFactory(RocksDBEngine* e, int num_levels):
+                     engine(e), num_levels(num_levels) {}
+            std::unique_ptr<rocksdb::CompactionFilter> CreateCompactionFilter(const rocksdb::CompactionFilter::Context& context) {
+                return std::unique_ptr < rocksdb::CompactionFilter > (new RocksDBCompactionFilter(engine, context, num_levels));
             }
 
             const char* Name() const
@@ -711,11 +707,14 @@ OP_NAMESPACE_BEGIN
     int RocksDBEngine::Init(const std::string& dir, const std::string& conf)
     {
         static RocksDBComparator comparator;
+        rocksdb::Status s = rocksdb::GetOptionsFromString(m_options, conf, &m_options);
+
         m_options.comparator = &comparator;
         m_options.merge_operator.reset(new MergeOperator(this));
         m_options.prefix_extractor.reset(new RocksDBPrefixExtractor);
-        m_options.compaction_filter_factory.reset(new RocksDBCompactionFilterFactory(this));
+        m_options.compaction_filter_factory.reset(new RocksDBCompactionFilterFactory(this, m_options.num_levels));
         m_options.info_log.reset(new RocksDBLogger);
+
         m_options.create_if_missing = true;
         if (DEBUG_ENABLED())
         {
@@ -726,13 +725,13 @@ OP_NAMESPACE_BEGIN
             m_options.info_log_level = rocksdb::INFO_LEVEL;
         }
 
-        rocksdb::Status s = rocksdb::GetOptionsFromString(m_options, conf, &m_options);
         if (!s.ok())
         {
             ERROR_LOG("Invalid rocksdb's options:%s with error reason:%s", conf.c_str(), s.ToString().c_str());
             return -1;
         }
-        m_options.OptimizeLevelStyleCompaction();
+        //Commented by Ilya Peresadin
+        //m_options.OptimizeLevelStyleCompaction();
         m_options.IncreaseParallelism();
         m_options.stats_dump_period_sec = (unsigned int) g_db->GetConf().statistics_log_period;
         m_dbdir = dir;
@@ -745,7 +744,7 @@ OP_NAMESPACE_BEGIN
         m_options.comparator = &comparator;
         m_options.merge_operator.reset(new MergeOperator(this));
         m_options.prefix_extractor.reset(new RocksDBPrefixExtractor);
-        m_options.compaction_filter_factory.reset(new RocksDBCompactionFilterFactory(this));
+        m_options.compaction_filter_factory.reset(new RocksDBCompactionFilterFactory(this, m_options.num_levels));
         m_options.info_log.reset(new RocksDBLogger);
         m_options.info_log_level = rocksdb::INFO_LEVEL;
         return rocksdb_err(rocksdb::RepairDB(dir, m_options));
