@@ -949,6 +949,11 @@ OP_NAMESPACE_BEGIN
         }
     }
 
+
+    void Ardb::DeleteKeyFromKeyCache(const string& key) {
+        keyCache.Delete(key);
+    }
+
     int64 Ardb::ScanExpiredKeys()
     {
         /*
@@ -1035,6 +1040,7 @@ OP_NAMESPACE_BEGIN
         }
         return 0;
     }
+
     void Ardb::AddExpiredKey(const Data& ns, const Data& key)
     {
         KeyPrefix k;

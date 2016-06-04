@@ -44,6 +44,7 @@
 #include "logger.hpp"
 #include <stack>
 #include <sparsehash/dense_hash_map>
+#include <common/cache/KeyCache.h>
 
 #define TTL_DB_NSMAESPACE "__TTL_DB__"
 
@@ -153,6 +154,8 @@ OP_NAMESPACE_BEGIN
             DataSet* m_restoring_nss;
 
             int64_t m_min_ttl;
+
+            KeyCache keyCache;
 
             static void MigrateCoroTask(void* data);
             static void MigrateDBCoroTask(void* data);
@@ -464,6 +467,8 @@ OP_NAMESPACE_BEGIN
             void AddClient(Context& ctx);
             void ScanClients();
             int64 ScanExpiredKeys();
+            void DeleteKeyFromKeyCache(const string& key);
+
             const ArdbConfig& GetConf() const
             {
                 return m_conf;

@@ -124,8 +124,8 @@ OP_NAMESPACE_BEGIN
         {
             reply.SetErrCode(ctx.transc_err);
         }
-        else
-        {
+        else {
+            keyCache.Put(keystr);
             reply.SetStatusCode(STATUS_OK);
         }
         return 0;
@@ -173,6 +173,7 @@ OP_NAMESPACE_BEGIN
             }
             else
             {
+                keyCache.Put(keystr);
                 reply.SetStatusCode(STATUS_OK);
             }
             return 0;
@@ -225,6 +226,8 @@ OP_NAMESPACE_BEGIN
         }
         else
         {
+            if (inserted)
+                keyCache.Put(keystr);
             reply.SetInteger(inserted ? 1 : 0);
         }
         return 0;

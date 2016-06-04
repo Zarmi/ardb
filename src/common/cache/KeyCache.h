@@ -25,36 +25,37 @@ public:
     typedef int64_t TtlType;
     static const TtlType INF = std::numeric_limits<TtlType>::max();
 
-    struct KeyEntry {
+    struct CacheEntry {
         KeyType key;
         TtlType ttl;
-        KeyEntry(const KeyType& key, TtlType ttl = INF): key(key), ttl(ttl) {}
+        CacheEntry(const KeyType& key, TtlType ttl = INF): key(key), ttl(ttl < 0 ? INF: ttl) {}
 
         bool hasTTL() {
             return ttl != INF;
         }
 
-        bool operator < (const KeyEntry& other) const {
+        bool operator < (const CacheEntry& other) const {
             return ttl < other.ttl;
         }
     };
 
     KeyCache();
-    void Put(const KeyType& kt);
-    virtual void Put(const KeyEntry& keyEntry);
     virtual std::vector<KeyType> Get(const KeyType& pattern);
+    void Put(const KeyType& kt);
+    virtual void Put(const CacheEntry& keyEntry);
     virtual void Delete(const KeyType& key);
     virtual void Expire(const KeyType &key, TtlType ttl);
-    size_t size();
+    virtual bool IsSupportedPattern(const KeyType& pattern);
+    virtual size_t size();
 
     virtual ~KeyCache() {}
 
-private:
+protected:
     typedef google::dense_hash_map<KeyType, TtlType> HashMap;
-    typedef std::set<KeyEntry> Set;
+    typedef std::set<CacheEntry> Set;
     Set sortedKeys;
     HashMap ttlByKey;
-    void ensureTTL();
+    virtual void ensureTTL();
 
     struct Matcher {
         virtual bool operator() (const KeyType& s) = 0;
@@ -84,34 +85,6 @@ private:
         EqualsMatcher(const KeyType& str);
         bool operator()(const KeyType& t);
     };
-
-    /*struct SubstringMatcher : public Matcher {
-        const KeyType& s;
-        std::vector<int> prefix;
-        SubstringMatcher(const KeyType& p): s(p), prefix(s.size()) {
-            int n = (int) s.size();
-            for (int i = 1; i < n; ++i) {
-                int j = prefix[i - 1];
-                while (j > 0 && s[i] != s[j]) j = prefix[j - 1];
-                prefix[i] = j + (s[i] == s[j]);
-            }
-        }
-
-        bool operator()(const KeyType& t) {
-            if (t.size() < s.size())
-                return false;
-            int prev = prefix[s.size() - 1];
-            int slen = s.size();
-            for (int i = 0; i < t.size(); ++i) {
-                int j = prev;
-                while (j > 0 && t[i] != s[j]) j = prefix[j - 1];
-                prev = j + (t[i] == s[j]);
-                if (prev == slen)
-                    return true;
-            }
-            return false;
-        }
-    };*/
 };
 
 #endif //ARDB_RELEASE_KEYCACHE_H

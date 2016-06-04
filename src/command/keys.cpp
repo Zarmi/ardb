@@ -383,6 +383,18 @@ OP_NAMESPACE_BEGIN
             reply.SetInteger(0);
         }
 
+        if (keyCache.IsSupportedPattern(pattern)) {//if KeyCache support this keys
+            vector<string> keys = keyCache.Get(pattern);
+            if (cmd.GetType() == REDIS_CMD_KEYS) {
+                for (const string& x: keys) {
+                    RedisReply &r = reply.AddMember();
+                    r.SetString(x);
+                }
+            } else
+                reply.SetInteger(keys.size());
+            return 0;
+        }
+
         bool noregex = start == pattern;
         int64_t match_count = 0;
         KeyObject startkey(ctx.ns, KEY_META, start);
@@ -632,13 +644,16 @@ OP_NAMESPACE_BEGIN
                 abort();
             }
         }
-        KeyObject key(ctx.ns, KEY_META, cmd.GetArguments()[0]);
+
+        const string& keystr = cmd.GetArguments()[0];
+        KeyObject key(ctx.ns, KEY_META, keystr);
         if (!ctx.flags.redis_compatible && m_engine->GetFeatureSet().support_merge)
         {
             reply.SetStatusCode(STATUS_OK);
             Data merge_data;
             merge_data.SetInt64(mills);
             m_engine->Merge(ctx, key, REDIS_CMD_PEXPIREAT, merge_data);
+            keyCache.Expire(keystr, mills);
         }
         else
         {
@@ -656,6 +671,7 @@ OP_NAMESPACE_BEGIN
             {
                 reply.SetInteger(1);
                 int64 old_ttl = meta_value.GetTTL();
+                keyCache.Expire(keystr, mills);
                 if (0 == MergeExpire(ctx, key, meta_value, mills))
                 {
                     SetKeyValue(ctx, key, meta_value);
@@ -829,9 +845,13 @@ OP_NAMESPACE_BEGIN
         ctx.flags.iterate_no_upperbound = cmd.GetArguments().size() > 1 ? 1 : 0;
         for (size_t i = 0; i < cmd.GetArguments().size(); i++)
         {
-            KeyObject meta(ctx.ns, KEY_META, cmd.GetArguments()[i]);
+            const string& keystr = cmd.GetArguments()[i];
+            KeyObject meta(ctx.ns, KEY_META, keystr);
             KeyLockGuard guard(ctx, meta);
-            removed += DelKey(ctx, meta, iter);
+            int curRemoved = DelKey(ctx, meta, iter);
+            if (curRemoved)
+                keyCache.Delete(keystr);
+            removed += curRemoved;
         }
         DELETE(iter);
 

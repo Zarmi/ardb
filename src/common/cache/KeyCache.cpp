@@ -35,24 +35,26 @@ KeyCache::KeyCache() {
 }
 
 void KeyCache::Put(const KeyType& kt) {
-    Put(KeyEntry(kt, INF));
+    Put(CacheEntry(kt, INF));
 }
 
 
-void KeyCache::Put(const KeyEntry& keyEntry) {
+void KeyCache::Put(const CacheEntry& keyEntry) {
     ensureTTL();
-    sortedKeys.insert(keyEntry);
-    ttlByKey[keyEntry.key] = keyEntry.ttl;
+    if (sortedKeys.find(keyEntry.key) == sortedKeys.end()) {//!sortedKeys.contains(keyEntry.key)
+        sortedKeys.insert(keyEntry);
+        ttlByKey[keyEntry.key] = keyEntry.ttl;
+    }
 }
 
 void KeyCache::Delete(const KeyType& key) {
     ensureTTL();
     typename HashMap::iterator it = ttlByKey.find(key);
-    if (it != ttlByKey.end()) {
+    if (it != ttlByKey.end()) {//ttlByKey.contains(key)
         TtlType ttl = it->second;
         ttlByKey.erase(it);//erase ttl from ttl map
 
-        sortedKeys.erase({key, ttl});//erase KeyEntry from set
+        sortedKeys.erase(CacheEntry(key, ttl));//erase KeyEntry from set
     }
 }
 
@@ -79,12 +81,12 @@ std::vector<KeyCache::KeyType> KeyCache::Get(const KeyType& pattern) {
 void KeyCache::Expire(const KeyType &key, TtlType ttl) {
     ensureTTL();
     typename HashMap::iterator it = ttlByKey.find(key);
-    if (it != ttlByKey.end()) {
+    if (it != ttlByKey.end()) {//ttlByKey.contains(key)
         TtlType prevTtl = it->second;
-        sortedKeys.erase({key, prevTtl});
+        sortedKeys.erase(CacheEntry(key, prevTtl));
 
         ttlByKey[key] = ttl;
-        sortedKeys.insert({key, ttl});
+        sortedKeys.insert(CacheEntry(key, ttl));
     }
 }
 
@@ -97,10 +99,21 @@ size_t KeyCache::size() {
 void KeyCache::ensureTTL() {
     TtlType currentTime = ardb::get_current_epoch_millis();
     while (!sortedKeys.empty()) {
-        KeyEntry entry = *sortedKeys.begin();
+        CacheEntry entry = *sortedKeys.begin();
         if (entry.ttl > currentTime)
             return;
         sortedKeys.erase(sortedKeys.begin());
         ttlByKey.erase(entry.key);
     }
+}
+
+bool KeyCache::IsSupportedPattern(const KeyType& pattern) {
+    for (int i = 1; i + 1 < pattern.size(); ++i)
+        if (pattern[i] == '*' || pattern[i] == '?' || pattern[i] == '[' || pattern[i] == '\\')
+            return false;
+    if (pattern[0] == '?' || pattern[0] == '[' || pattern[0] == '\\')
+        return false;
+    if (pattern.back() == '?' || pattern.back() == '[' || pattern.back() == '\\')
+        return false;
+    return true;
 }

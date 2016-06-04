@@ -352,30 +352,32 @@ OP_NAMESPACE_BEGIN
             }
             bool Filter(int level, const rocksdb::Slice& key, const rocksdb::Slice& existing_value, std::string* new_value, bool* value_changed) const
             {
+                if (level == num_levels - 2) {
+                    Buffer buffer(const_cast<char*>(key.data()), 0, key.size());
+                    KeyObject k;
+                    if (!k.DecodePrefix(buffer, false))
+                        FATAL_LOG("Failed to decode prefix in compact filter.");
+                    g_db->DeleteKeyFromKeyCache(k.GetKey().AsString());
+                    return true;
+                }
+
                 /*
-                 * do not do filter for slave
-                 */
-                if (level == num_levels - 2)
+                    * do not do filter for slave
+                */
+                if (!g_db->GetConf().master_host.empty())
+                    return false;
+
+                if (existing_value.size() == 0)
                     return true;
 
-                if (!g_db->GetConf().master_host.empty())
-                {
-                    return false;
-                }
-                if (existing_value.size() == 0)
-                {
-                    return true;
-                }
                 if (ns.IsNil())
-                {
                     return false;
-                }
+
                 Buffer buffer(const_cast<char*>(key.data()), 0, key.size());
                 KeyObject k;
                 if (!k.DecodePrefix(buffer, false))
-                {
                     FATAL_LOG("Failed to decode prefix in compact filter.");
-                }
+
                 if (k.GetType() == KEY_META)
                 {
                     ValueObject meta;
