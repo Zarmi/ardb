@@ -107,12 +107,12 @@ CJSON_VER=cJSON
 CJSON_PATH=${LIB_PATH}/${CJSON_VER}
 CJSON_LIBA=${CJSON_PATH}/libcjson.a
 
-OPTIMIZATION?=-O2
+#OPTIMIZATION?=-O2
 OPT=$(OPTIMIZATION)
 
-CXXFLAGS=-Wall -g ${OPT} -fPIC -D__STDC_FORMAT_MACROS -DARDB_VERSION='"${ARDB_VERSION}"' 
+CXXFLAGS=-Wall -g ${OPT} -fPIC -D__STDC_FORMAT_MACROS -DARDB_VERSION='"${ARDB_VERSION}"'
 CCFLAGS=-Wall -std=gnu99 ${OPT} -fPIC -pedantic -g -D__STDC_FORMAT_MACROS -DARDB_VERSION='"${ARDB_VERSION}"'
-LDFLAGS=-g 
+LDFLAGS=-g
 
 SNAPPY_CXXFLAGS=-g $(OPT)
 LEVELDB_OPT=-g $(OPT)
@@ -154,7 +154,7 @@ endif
 
 
 COMMON_VPATH=common/channel common/channel/socket common/channel/fifo common/channel/codec common/channel/timer common/channel/signal \
-             common/util common/util/exception  common/thread  common/coro common/redis common/buffer common/geo common/channel/redis
+             common/util common/util/exception  common/thread  common/coro common/redis common/buffer common/geo common/channel/redis common/cache
 COMMON_CPPFILES := $(foreach dir, $(COMMON_VPATH), $(wildcard $(dir)/*.cpp))
 COMMON_CFILES := $(foreach dir, $(COMMON_VPATH), $(wildcard $(dir)/*.c))
 COMMON_OBJECTS := $(patsubst %.cpp, %.o, $(COMMON_CPPFILES)) $(patsubst %.c, %.o, $(COMMON_CFILES))

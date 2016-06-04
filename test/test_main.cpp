@@ -34,40 +34,68 @@
 #include "command/lua_scripting.hpp"
 #include "db/db.hpp"
 #include "config.hpp"
+#include "common/cache/KeyCache.h"
 
 using namespace ardb;
 
-int main()
+int main(int argc, char** argv)
 {
-    Ardb db;
-    if (db.Init("../test/ardb-test.conf") != 0)
-    {
-        printf("Failed to init db.\n");
-        return -1;
-    }
-    LUAInterpreter interpreter;
-    std::deque<std::string> fs;
-    std::string command_test_path = "../test/commands/";
-    list_subfiles(command_test_path, fs);
-
-    for (size_t i = 0; i < fs.size(); i++)
-    {
-        if(has_suffix(fs[i], ".lua"))
-        {
-            printf("=======================%s Test Begin============================\n", fs[i].c_str());
-            uint64 start = get_current_epoch_millis();
-            Context tmpctx;
-            interpreter.EvalFile(tmpctx, command_test_path + fs[i]);
-            RedisReply& r = tmpctx.GetReply();
-            if(r.IsErr())
-            {
-                fprintf(stderr, "%s %s\n", fs[i].c_str(), r.Error().c_str());
+    if (argc == 2 && strcmp(argv[1], "cache-interactor") == 0) {
+        string cmd;
+        using namespace std;
+        KeyCache cache;
+        while (cin >> cmd) {
+            if (cmd == "get") {
+                string key;
+                cin >> key;
+                cout << "RESPONSE:" << endl;
+                vector<string> result = cache.Get(key);
+                for (string x: result)
+                    cout << x << endl;
+                cout << "======" << endl;
+            } else if (cmd == "put") {
+                string key;
+                cin >> key;
+                cache.Put(key);
+            } else if (cmd == "expire") {
+                string key;
+                int ex;
+                cin >> key >> ex;
+                int64_t ttl = get_current_epoch_millis() + ex * 1000;
+                cache.Expire(key, ttl);
+            } else if (cmd == "delete") {
+                string key;
+                cin >> key;
+                cache.Delete(key);
             }
-            uint64 end = get_current_epoch_millis();
-            printf("=======================%s Test End(%llums)============================\n\n", fs[i].c_str(), (end - start));
-            if(r.IsErr())
-            {
-                return -1;
+        }
+    } else {
+        Ardb db;
+        if (db.Init("../test/ardb-test.conf") != 0) {
+            printf("Failed to init db.\n");
+            return -1;
+        }
+        LUAInterpreter interpreter;
+        std::deque<std::string> fs;
+        std::string command_test_path = "../test/commands/";
+        list_subfiles(command_test_path, fs);
+
+        for (size_t i = 0; i < fs.size(); i++) {
+            if (has_suffix(fs[i], ".lua")) {
+                printf("=======================%s Test Begin============================\n", fs[i].c_str());
+                uint64 start = get_current_epoch_millis();
+                Context tmpctx;
+                interpreter.EvalFile(tmpctx, command_test_path + fs[i]);
+                RedisReply &r = tmpctx.GetReply();
+                if (r.IsErr()) {
+                    fprintf(stderr, "%s %s\n", fs[i].c_str(), r.Error().c_str());
+                }
+                uint64 end = get_current_epoch_millis();
+                printf("=======================%s Test End(%llums)============================\n\n", fs[i].c_str(),
+                       (end - start));
+                if (r.IsErr()) {
+                    return -1;
+                }
             }
         }
     }
