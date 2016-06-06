@@ -40,6 +40,7 @@ public:
     };
 
     KeyCache();
+    virtual void LoadFromDisk();
     virtual std::vector<KeyType> Get(const KeyType& pattern);
     void Put(const KeyType& kt);
     virtual void Put(const CacheEntry& keyEntry);
