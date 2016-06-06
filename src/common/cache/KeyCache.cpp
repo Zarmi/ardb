@@ -11,6 +11,11 @@ KeyCache::PrefixMatcher::PrefixMatcher(const KeyType& prefix): prefix(prefix) {}
 KeyCache::SuffixMatcher::SuffixMatcher(const KeyType& suffix): suffix(suffix) {}
 KeyCache::SubstringMatcher::SubstringMatcher(const KeyType& substring): substring(substring) {}
 KeyCache::EqualsMatcher::EqualsMatcher(const KeyType& str): str(str) {}
+KeyCache::PatternMatcher::PatternMatcher(const KeyType &pattern):pattern(pattern) {}
+
+bool KeyCache::PatternMatcher::operator()(const KeyType &t) {
+    return stringmatchlen(pattern.c_str(), pattern.size(), t.c_str(), t.size(), 0) == 1;
+}
 
 bool KeyCache::PrefixMatcher::operator() (const KeyType& t) {
     return prefix.size() <= t.size() && t.substr(0, prefix.size()) == prefix;
@@ -94,14 +99,17 @@ void KeyCache::Delete(const KeyType& key) {
 std::vector<KeyCache::KeyType> KeyCache::Get(const KeyType& pattern) {
     ensureTTL();
     Matcher* matcher;
-    if (pattern.size() != 1 && pattern[0] == '*' && pattern.back() == '*')
-        matcher = new SubstringMatcher(pattern.substr(1, pattern.size() - 2));
-    else if (pattern[0] == '*')
-        matcher = new SuffixMatcher(pattern.substr(1, pattern.size() - 1));
-    else if (pattern.back() == '*')
-        matcher = new PrefixMatcher(pattern.substr(0, pattern.size() - 1));
-    else
-        matcher = new EqualsMatcher(pattern);
+    if (isOptimizedPattern(pattern)) {
+        if (pattern.size() != 1 && pattern[0] == '*' && pattern.back() == '*')
+            matcher = new SubstringMatcher(pattern.substr(1, pattern.size() - 2));
+        else if (pattern[0] == '*')
+            matcher = new SuffixMatcher(pattern.substr(1, pattern.size() - 1));
+        else if (pattern.back() == '*')
+            matcher = new PrefixMatcher(pattern.substr(0, pattern.size() - 1));
+        else
+            matcher = new EqualsMatcher(pattern);
+    } else
+        matcher = new PatternMatcher(pattern);
 
     std::vector<KeyType> ret;
     for (HashMap::const_iterator it = ttlByKey.begin(); it != ttlByKey.end(); it++)
@@ -140,7 +148,7 @@ void KeyCache::ensureTTL() {
     }
 }
 
-bool KeyCache::IsSupportedPattern(const KeyType& pattern) {
+bool KeyCache::isOptimizedPattern(const KeyType &pattern) {
     for (int i = 1; i + 1 < pattern.size(); ++i)
         if (pattern[i] == '*' || pattern[i] == '?' || pattern[i] == '[' || pattern[i] == '\\')
             return false;

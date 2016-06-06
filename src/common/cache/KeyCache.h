@@ -47,7 +47,6 @@ public:
     virtual void Put(const CacheEntry& keyEntry);
     virtual void Delete(const KeyType& key);
     virtual void Expire(const KeyType &key, TtlType ttl);
-    virtual bool IsSupportedPattern(const KeyType& pattern);
     virtual size_t size();
 
     virtual ~KeyCache() {}
@@ -58,6 +57,7 @@ protected:
     Set sortedKeys;
     HashMap ttlByKey;
     virtual void ensureTTL();
+    bool isOptimizedPattern(const KeyType &pattern);
 
     struct Matcher {
         virtual bool operator() (const KeyType& s) = 0;
@@ -85,6 +85,12 @@ protected:
     struct EqualsMatcher : public Matcher {
         KeyType str;
         EqualsMatcher(const KeyType& str);
+        bool operator()(const KeyType& t);
+    };
+
+    struct PatternMatcher: public Matcher {
+        KeyType pattern;
+        PatternMatcher(const KeyType& pattern);
         bool operator()(const KeyType& t);
     };
 };

@@ -358,98 +358,22 @@ OP_NAMESPACE_BEGIN
         return 0;
     }
 
-    int Ardb::Keys(Context& ctx, RedisCommandFrame& cmd)
-    {
+    int Ardb::Keys(Context& ctx, RedisCommandFrame& cmd) {
         const std::string& pattern = cmd.GetArguments()[0];
-        std::string start;
-        for (size_t i = 0; i < pattern.size(); i++)
-        {
-            if (pattern[i] != '*' && pattern[i] != '?' && pattern[i] != '[' && pattern[i] != '\\')
-            {
-                start.append(pattern[i], 1);
-            }
-            else
-            {
-                break;
-            }
-        }
         RedisReply& reply = ctx.GetReply();
         if (cmd.GetType() == REDIS_CMD_KEYS)
-        {
             reply.ReserveMember(0);
-        }
         else
-        {
             reply.SetInteger(0);
-        }
 
-        if (m_key_cache->IsSupportedPattern(pattern)) {//if KeyCache support this keys
-            vector<string> keys = m_key_cache->Get(pattern);
-            if (cmd.GetType() == REDIS_CMD_KEYS) {
-                for (const string& x: keys) {
-                    RedisReply &r = reply.AddMember();
-                    r.SetString(x);
-                }
-            } else
-                reply.SetInteger(keys.size());
-            return 0;
-        }
-
-        bool noregex = start == pattern;
-        int64_t match_count = 0;
-        KeyObject startkey(ctx.ns, KEY_META, start);
-        ctx.flags.iterate_multi_keys = 1;
-        ctx.flags.iterate_no_upperbound = 1;
-        /*
-         * for rocksdb, this flag must be set for right behavior
-         */
-        ctx.flags.iterate_total_order = 1;
-        Iterator* iter = m_engine->Find(ctx, startkey);
-        while (iter->Valid())
-        {
-            KeyObject& k = iter->Key();
-            if (k.GetType() == KEY_META)
-            {
-                std::string keystr;
-                k.GetKey().ToString(keystr);
-                if (stringmatchlen(pattern.c_str(), pattern.size(), keystr.c_str(), keystr.size(), 0) == 1)
-                {
-                    match_count++;
-                    if (cmd.GetType() == REDIS_CMD_KEYS)
-                    {
-                        RedisReply& r = reply.AddMember();
-                        r.SetString(keystr);
-                    }
-                    /*
-                     * limit keys output
-                     */
-                    if (match_count >= 10000 && cmd.GetType() == REDIS_CMD_KEYS)
-                    {
-                        reply.SetErrorReason("Too many keys for keys command, use 'scan' instead.");
-                        break;
-                    }
-                    if (noregex)
-                    {
-                        break;
-                    }
-                }
+        vector<string> keys = m_key_cache->Get(pattern);
+        if (cmd.GetType() == REDIS_CMD_KEYS) {
+            for (const string& x: keys) {
+                RedisReply &r = reply.AddMember();
+                r.SetString(x);
             }
-            if (iter->Value().GetType() != KEY_STRING)
-            {
-                std::string keystr;
-                k.GetKey().ToString(keystr);
-                keystr.append(1, 0);
-                KeyObject next(ctx.ns, KEY_META, keystr);
-                iter->Jump(next);
-                continue;
-            }
-            iter->Next();
-        }
-        DELETE(iter);
-        if (cmd.GetType() == REDIS_CMD_KEYSCOUNT)
-        {
-            reply.SetInteger(match_count);
-        }
+        } else
+            reply.SetInteger(keys.size());
         return 0;
     }
 
