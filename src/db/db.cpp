@@ -534,6 +534,9 @@ OP_NAMESPACE_BEGIN
         m_starttime = time(NULL);
         g_engine = m_engine;
         INFO_LOG("Ardb init engine:%s success.", g_engine_name);
+
+        NEW(m_key_cache, ConcurrentKeyCache());
+        m_key_cache->LoadFromDisk(m_engine);
         return 0;
     }
 
@@ -951,7 +954,7 @@ OP_NAMESPACE_BEGIN
 
 
     void Ardb::DeleteKeyFromKeyCache(const string& key) {
-        keyCache.Delete(key);
+        m_key_cache->Delete(key);
     }
 
     int64 Ardb::ScanExpiredKeys()

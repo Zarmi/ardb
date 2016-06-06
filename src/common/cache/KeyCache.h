@@ -10,6 +10,7 @@
 #include <numeric>
 #include <limits>
 #include "sparsehash/dense_hash_map"
+#include "db/engine.hpp"
 
 #include <cstring>
 #include <numeric>
@@ -35,12 +36,12 @@ public:
         }
 
         bool operator < (const CacheEntry& other) const {
-            return ttl < other.ttl;
+            return ttl < other.ttl || ttl == other.ttl && key < other.key;
         }
     };
 
     KeyCache();
-    virtual void LoadFromDisk();
+    void LoadFromDisk(ardb::Engine* engine);
     virtual std::vector<KeyType> Get(const KeyType& pattern);
     void Put(const KeyType& kt);
     virtual void Put(const CacheEntry& keyEntry);

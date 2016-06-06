@@ -44,7 +44,7 @@
 #include "logger.hpp"
 #include <stack>
 #include <sparsehash/dense_hash_map>
-#include <common/cache/KeyCache.h>
+#include <common/cache/ConcurrentKeyCache.h>
 
 #define TTL_DB_NSMAESPACE "__TTL_DB__"
 
@@ -155,7 +155,7 @@ OP_NAMESPACE_BEGIN
 
             int64_t m_min_ttl;
 
-            KeyCache keyCache;
+            KeyCache* m_key_cache;
 
             static void MigrateCoroTask(void* data);
             static void MigrateDBCoroTask(void* data);

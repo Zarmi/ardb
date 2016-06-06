@@ -9,7 +9,7 @@
 #include "thread/spin_rwlock.hpp"
 #include "thread/spin_mutex_lock.hpp"
 
-class ConcurrentKeyCache:public KeyCache {
+class ConcurrentKeyCache: public KeyCache {
     void Put(const CacheEntry& keyEntry);
     std::vector<KeyType> Get(const KeyType& pattern);
     void Delete(const KeyType& key);

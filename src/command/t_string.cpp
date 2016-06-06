@@ -667,7 +667,7 @@ OP_NAMESPACE_BEGIN
         }
         else
         {
-            keyCache.Put(KeyCache::CacheEntry(key, ttl));
+            m_key_cache->Put(KeyCache::CacheEntry(key, ttl));
             reply.SetStatusCode(STATUS_OK);
         }
         return 0;

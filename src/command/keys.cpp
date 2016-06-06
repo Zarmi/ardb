@@ -383,8 +383,8 @@ OP_NAMESPACE_BEGIN
             reply.SetInteger(0);
         }
 
-        if (keyCache.IsSupportedPattern(pattern)) {//if KeyCache support this keys
-            vector<string> keys = keyCache.Get(pattern);
+        if (m_key_cache->IsSupportedPattern(pattern)) {//if KeyCache support this keys
+            vector<string> keys = m_key_cache->Get(pattern);
             if (cmd.GetType() == REDIS_CMD_KEYS) {
                 for (const string& x: keys) {
                     RedisReply &r = reply.AddMember();
@@ -653,7 +653,7 @@ OP_NAMESPACE_BEGIN
             Data merge_data;
             merge_data.SetInt64(mills);
             m_engine->Merge(ctx, key, REDIS_CMD_PEXPIREAT, merge_data);
-            keyCache.Expire(keystr, mills);
+            m_key_cache->Expire(keystr, mills);
         }
         else
         {
@@ -671,7 +671,7 @@ OP_NAMESPACE_BEGIN
             {
                 reply.SetInteger(1);
                 int64 old_ttl = meta_value.GetTTL();
-                keyCache.Expire(keystr, mills);
+                m_key_cache->Expire(keystr, mills);
                 if (0 == MergeExpire(ctx, key, meta_value, mills))
                 {
                     SetKeyValue(ctx, key, meta_value);
@@ -850,7 +850,7 @@ OP_NAMESPACE_BEGIN
             KeyLockGuard guard(ctx, meta);
             int curRemoved = DelKey(ctx, meta, iter);
             if (curRemoved)
-                keyCache.Delete(keystr);
+                m_key_cache->Delete(keystr);
             removed += curRemoved;
         }
         DELETE(iter);

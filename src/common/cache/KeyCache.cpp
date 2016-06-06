@@ -3,7 +3,6 @@
 //
 #include "KeyCache.h"
 #include "db/codec.hpp"
-#include "db/engine.hpp"
 #include <common/util/time_helper.hpp>
 
 //Matchers
@@ -36,23 +35,25 @@ KeyCache::KeyCache() {
     ttlByKey.set_deleted_key("\n");
 }
 
-void KeyCache::LoadFromDisk() {
-    /*int64_t match_count = 0;
+void KeyCache::LoadFromDisk(ardb::Engine* engine) {
+    INFO_LOG("Loading keys to KeyCache from disk");
+    Context ctx;
     ardb::KeyObject startkey(ctx.ns, KEY_META, "");
     ctx.flags.iterate_multi_keys = 1;
     ctx.flags.iterate_no_upperbound = 1;
     ctx.flags.iterate_total_order = 1;
-    ardb::Iterator* iter = m_engine->Find(ctx, startkey);
-    while (iter->Valid())
-    {
+    ardb::Iterator* iter = engine->Find(ctx, startkey);
+    while (iter->Valid()) {
         KeyObject& k = iter->Key();
-        if (k.GetType() == KEY_META)
-        {
-            std::string keystr;
-            k.GetKey().AsString()
+        ValueObject& value = iter->Value();
+        if (k.GetType() == KEY_META) {
+            std::string keystr = k.GetKey().AsString();
+            int64_t  ttl = value.GetTTL();
+            if (ttl == 0)
+                ttl = INF;
+            KeyCache::Put(CacheEntry(keystr, ttl));
         }
-        if (iter->Value().GetType() != KEY_STRING)
-        {
+        if (iter->Value().GetType() != KEY_STRING) {
             std::string keystr(k.GetKey().AsString());
             keystr.append(1, 0);
             KeyObject next(ctx.ns, KEY_META, keystr);
@@ -61,7 +62,9 @@ void KeyCache::LoadFromDisk() {
         }
         iter->Next();
     }
-    DELETE(iter);*/
+    DELETE(iter);
+    ensureTTL();
+    INFO_LOG("Keys from disk loaded to KeyCache");
 }
 
 void KeyCache::Put(const KeyType& kt) {
