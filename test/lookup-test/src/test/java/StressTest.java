@@ -37,15 +37,21 @@ public class StressTest {
 
     @Test
     public void test1Performance() {
+        System.out.println("Perfomance test");
         try (Jedis jedis = createJedis()) {
-            for (int i = 0; i < MAX_NUM_KEYS; ++i)
+            for (int i = 1; i <= MAX_NUM_KEYS; ++i) {
                 hmsetRandomMap(jedis);
+                if (i % 10000 == 0)
+                    System.out.printf("%d iterations done\n", i);
+            }
             keys(jedis);
         }
     }
 
     @Test
     public void test2DeletingKeysWhenCompaction() throws Exception {
+        System.out.println("DeletingKeysWhenCompaction test");
+
         int prob = 10000 * NUM_CLIENTS;
         System.out.printf("Probably: %d %.2f\n", prob, 1.0 / prob);
         MD5_BASE = RandomStringUtils.randomAscii(32);
@@ -74,9 +80,10 @@ public class StressTest {
             System.out.println(String.format("Start client #%d", myId));
             Random random = new Random(myId);
             try (Jedis jedis = createJedis()) {
-                for (int i = 0; i < ITERATIONS; ++i)
+                for (int i = 1; i <= ITERATIONS; ++i) {
                     if (random.nextInt(probablyKEYSOperation) == 0) {
                         //Call keys
+                        System.out.printf("Client %d: KEYS operation\n", myId);
                         writeLock.lock();
                         try {
                             keys(jedis);
@@ -92,6 +99,9 @@ public class StressTest {
                             readLock.unlock();
                         }
                     }
+                    if (i % 10000 == 0)
+                        System.out.printf("Client %d: %d iterations done\n", myId, i);
+                }
             }
         }
     }
