@@ -116,6 +116,6 @@ public class TestUtils {
     }
 
     public static Jedis createJedis() {
-        return new Jedis("localhost", 16379, -1);
+        return new Jedis("localhost", 16379, Integer.MAX_VALUE);
     }
 }
