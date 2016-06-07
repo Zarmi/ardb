@@ -126,6 +126,14 @@ public class TestUtils {
             chars[c++] = (char)(i + '0');
     }
 
+    public static int randInt(int l, int r) {
+        return random.nextInt(r - l) + l;
+    }
+
+    public static int randInt(int r) {
+        return random.nextInt(r);
+    }
+
     public static String randomString(int len) {
         return RandomStringUtils.random(len, chars);
     }

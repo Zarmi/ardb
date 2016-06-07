@@ -20,13 +20,12 @@ import static utils.TestUtils.*;
 public class StressTest {
     public static final int NUM_CLIENTS = 8;
     public static final int MAX_NUM_KEYS = 600_000;//with test config
-    public static final int ITERATIONS = 500_000;
     public static final int MAX_SIZE_DATA_IN_BYTES = 6500;
     public static final int MIN_SIZE_DATA_IN_BYTES = 4300;
 
-    private ReadWriteLock lock = new ReentrantReadWriteLock(true);
+    /*private ReadWriteLock lock = new ReentrantReadWriteLock(true);
     private Lock readLock = lock.readLock();
-    private Lock writeLock = lock.writeLock();
+    private Lock writeLock = lock.writeLock();*/
     private volatile String MD5_BASE;
 
     @BeforeClass
@@ -37,6 +36,7 @@ public class StressTest {
     @Test
     public void test1Performance() {
         System.out.println("Perfomance test");
+        MD5_BASE = randomString(32);
         try (Jedis jedis = createJedis()) {
             for (int i = 1; i <= MAX_NUM_KEYS; ++i) {
                 hmsetRandomMap(jedis);
@@ -49,6 +49,8 @@ public class StressTest {
 
     @Test
     public void test2DeletingKeysWhenCompaction() throws Exception {
+        final int ITERATIONS = 500_000;
+
         System.out.println("DeletingKeysWhenCompaction test");
 
         int prob = 10000 * NUM_CLIENTS;
@@ -57,18 +59,85 @@ public class StressTest {
         ExecutorService service = Executors.newFixedThreadPool(NUM_CLIENTS);
         List<Future> futures = new ArrayList<>();
         for (int i = 0; i < NUM_CLIENTS; ++i)
-            futures.add(service.submit(new Client(ITERATIONS,  prob, i)));
+            futures.add(service.submit(new ClientStreamOperations(ITERATIONS,  prob, i)));
         for (Future f: futures)
             f.get();
         service.shutdown();
     }
 
-    public class Client implements Runnable {
+    @Test
+    public void testSubstringReturn() throws Exception {
+        final int numSubs = 50;
+        final String[] subs = new String[numSubs];
+        final Set<String>[] keys = new TreeSet[numSubs];
+        for (int i = 0; i < numSubs; ++i) {
+            keys[i] = new TreeSet<>();
+            subs[i] = randomString(randInt(10, 30));
+        }
+        ExecutorService service = Executors.newFixedThreadPool(NUM_CLIENTS);
+        final int ITERATIONS = 50000;
+        int prob = 100;
+
+        List<Future> futures = new ArrayList<>();
+        for (int i = 0; i < NUM_CLIENTS; ++i)
+            futures.add(service.submit(new ClientSubstring(i, ITERATIONS,  prob, subs, keys)));
+        for (Future f: futures)
+            f.get();
+        service.shutdown();
+    }
+
+    public class ClientSubstring implements Runnable {
+        private final int ITERATIONS;
+        private final int p;
+        private final Set<String>[] keys;
+        private final String[] subs;
+        private final int myId;
+
+        public ClientSubstring(int myId, int iterations, int p, String[] subs, Set<String>[] keys) {
+            this.myId = myId;
+            this.ITERATIONS = iterations;
+            this.p = p;
+            this.keys = keys;
+            this.subs = subs;
+        }
+
+
+        @Override
+        public void run() {
+            try (Jedis jedis = createJedis()) {
+                for (int i = 1; i <= ITERATIONS; ++i) {
+                    if (random.nextInt(p) == 0) {
+                        System.out.printf("Client %d: KEYS operation\n", myId);
+                        int subId = randInt(subs.length);
+                        String sub = subs[subId];
+                        synchronized (keys[subId]) {
+                            Set<String> cur = jedis.keys("*" + sub + "*");
+                            Assert.assertEquals(keys[subId], cur);
+                        }
+                    } else {
+                        int subId = randInt(subs.length);
+                        String sub = subs[subId];
+                        String key = randomString(randInt(10)) + sub + randomString(randInt(10));
+                        synchronized (keys[subId]) {
+                            add(keys[subId], jedis, key);
+                            keys[subId].add(key);
+                        }
+                    }
+
+                    if (i % 10000 == 0)
+                        System.out.printf("ClientStreamOperations %d: %d iterations done\n", myId, i);
+                }
+            }
+        }
+    }
+
+
+    public class ClientStreamOperations implements Runnable {
         public final int ITERATIONS;
         private final int myId;
         private final int probablyKEYSOperation;
 
-        public Client(int iterations, int probablyKEYSOperation, int myId) {
+        public ClientStreamOperations(int iterations, int probablyKEYSOperation, int myId) {
             ITERATIONS = iterations;
             this.myId = myId;
             this.probablyKEYSOperation = probablyKEYSOperation;
@@ -83,23 +152,13 @@ public class StressTest {
                     if (random.nextInt(probablyKEYSOperation) == 0) {
                         //Call keys
                         System.out.printf("Client %d: KEYS operation\n", myId);
-                        writeLock.lock();
-                        try {
-                            keys(jedis);
-                            //MD5_BASE = RandomStringUtils.randomAscii(32);
-                        } finally {
-                            writeLock.unlock();
-                        }
-                    } else {
-                        readLock.lock();
-                        try {
-                            hmsetRandomMap(jedis);
-                        } finally {
-                            readLock.unlock();
-                        }
-                    }
+                        keys(jedis);
+                        //MD5_BASE = RandomStringUtils.randomAscii(32);
+                    } else
+                        hmsetRandomMap(jedis);
+
                     if (i % 10000 == 0)
-                        System.out.printf("Client %d: %d iterations done\n", myId, i);
+                        System.out.printf("ClientStreamOperations %d: %d iterations done\n", myId, i);
                 }
             }
         }
