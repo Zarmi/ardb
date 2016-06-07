@@ -23,9 +23,6 @@ public class StressTest {
     public static final int MAX_SIZE_DATA_IN_BYTES = 6500;
     public static final int MIN_SIZE_DATA_IN_BYTES = 4300;
 
-    /*private ReadWriteLock lock = new ReentrantReadWriteLock(true);
-    private Lock readLock = lock.readLock();
-    private Lock writeLock = lock.writeLock();*/
     private volatile String MD5_BASE;
 
     @BeforeClass
@@ -76,7 +73,7 @@ public class StressTest {
         }
         ExecutorService service = Executors.newFixedThreadPool(NUM_CLIENTS);
         final int ITERATIONS = 50000;
-        int prob = 100;
+        int prob = 10000;
 
         List<Future> futures = new ArrayList<>();
         for (int i = 0; i < NUM_CLIENTS; ++i)
@@ -125,7 +122,7 @@ public class StressTest {
                     }
 
                     if (i % 10000 == 0)
-                        System.out.printf("ClientStreamOperations %d: %d iterations done\n", myId, i);
+                        System.out.printf("Client %d: %d iterations done\n", myId, i);
                 }
             }
         }
@@ -158,7 +155,7 @@ public class StressTest {
                         hmsetRandomMap(jedis);
 
                     if (i % 10000 == 0)
-                        System.out.printf("ClientStreamOperations %d: %d iterations done\n", myId, i);
+                        System.out.printf("Client %d: %d iterations done\n", myId, i);
                 }
             }
         }
