@@ -74,7 +74,7 @@ public class StressTest {
             System.out.println(String.format("Start client #%d", myId));
             Random random = new Random(myId);
             try (Jedis jedis = createJedis()) {
-                for (int i = 0; i < ITERATIONS; ++i)
+                for (int i = 1; i <= ITERATIONS; ++i) {
                     if (random.nextInt(probablyKEYSOperation) == 0) {
                         //Call keys
                         writeLock.lock();
@@ -92,6 +92,9 @@ public class StressTest {
                             readLock.unlock();
                         }
                     }
+                    if (i % 10000 == 0)
+                        System.out.println("Client " + myId + ": " + i + " iterations done");
+                }
             }
         }
     }
