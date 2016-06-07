@@ -55,7 +55,8 @@ public class HandTest {
         testPattern(keys, jedis, "??y*");
         jedis.hmset("lolololofdlfd", genRandomMap(fields));
         testPattern(keys, jedis, "*lol*");
-        jedis.set("lolololofdlfd", "string");
+        remove(keys, jedis, "lolololofdlfd");
+
         testPattern(keys, jedis, "*lol*");
         testPattern(keys, jedis, "key[ak]");
         testPattern(keys, jedis, "lol[fo3]");
