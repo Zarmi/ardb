@@ -60,6 +60,14 @@ namespace ardb
             return filename;
     }
 
+    std::string to_memory_string(int64_t mem) {
+        if (mem < 1024)
+            return std::to_string(mem) + "B";
+        if (mem < 1024 * 1024)
+            return std::to_string(mem / 1024) + "KB";
+        return std::to_string(mem / (1024 * 1024)) + "MB";
+    }
+
     char* trim_str(char* s, const char* cset)
     {
         RETURN_NULL_IF_NULL(s);

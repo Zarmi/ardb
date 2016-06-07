@@ -138,6 +138,7 @@ OP_NAMESPACE_BEGIN
         iter->Jump(start_element);
         return 0;
     }
+
     int Ardb::GetMinMax(Context& ctx, const KeyObject& key, KeyType expected, ValueObject& meta, Iterator*& iter)
     {
         m_engine->Get(ctx, key, meta);
@@ -152,6 +153,17 @@ OP_NAMESPACE_BEGIN
     {
         return Keys(ctx, cmd);
     }
+
+    int Ardb::CacheMemory(Context& ctx, RedisCommandFrame& cmd)
+    {
+        const std::string& pattern = cmd.GetArguments()[0];
+        RedisReply& reply = ctx.GetReply();
+        int64_t memory = m_key_cache->Memory();
+        reply.SetString(to_memory_string(memory));
+        return 0;
+    }
+
+
     int Ardb::Randomkey(Context& ctx, RedisCommandFrame& cmd)
     {
         RedisReply& reply = ctx.GetReply();

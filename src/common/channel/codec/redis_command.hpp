@@ -224,6 +224,7 @@ namespace ardb
             REDIS_CMD_LPUSHX = 315,
             REDIS_CMD_LRANGE = 316,
             REDIS_CMD_LSET = 317,
+            REDIS_CMD_CACHEMEMORY = 318,
 
             //cluster commands
             REDIS_CMD_CLUSTER = 500,  //used in cluster mode

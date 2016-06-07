@@ -49,6 +49,7 @@ public:
     virtual void Expire(const KeyType &key, TtlType ttl);
     virtual size_t size();
     virtual void DropAll();
+    virtual int64_t Memory();
 
     virtual ~KeyCache() {}
 

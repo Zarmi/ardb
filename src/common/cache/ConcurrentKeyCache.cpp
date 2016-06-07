@@ -40,3 +40,8 @@ void ConcurrentKeyCache::DropAll() {
     ardb::WriteLockGuard<ardb::SpinRWLock> guard(lock);
     KeyCache::DropAll();
 }
+
+int64_t ConcurrentKeyCache::Memory() {
+    ardb::ReadLockGuard<ardb::SpinRWLock> guard(lock);
+    return KeyCache::Memory();
+}

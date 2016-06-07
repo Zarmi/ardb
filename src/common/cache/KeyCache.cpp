@@ -163,3 +163,20 @@ bool KeyCache::isOptimizedPattern(const KeyType &pattern) {
         return false;
     return true;
 }
+
+int64_t KeyCache::Memory() {
+    ensureTTL();
+
+    int64_t ret = 0;
+    for (HashMap::const_iterator it = ttlByKey.begin(); it != ttlByKey.end(); it++) {
+        ret += it->first.capacity();
+        ret += sizeof (it->second);
+    }
+
+    for (Set::const_iterator it = sortedKeys.begin(); it != sortedKeys.end(); it++) {
+        ret += it->key.capacity();
+        ret += sizeof (it->ttl);
+    }
+    ret += sizeof(*this);
+    return ret;
+}

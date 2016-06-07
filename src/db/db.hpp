@@ -442,6 +442,8 @@ OP_NAMESPACE_BEGIN
             int RestoreDB(Context& ctx, RedisCommandFrame& cmd);
             int RestoreChunk(Context& ctx, RedisCommandFrame& cmd);
             int Debug(Context& ctx, RedisCommandFrame& cmd);
+            int CacheMemory(Context& ctx, RedisCommandFrame& cmd);
+
 
             int DoCall(Context& ctx, RedisCommandHandlerSetting& setting, RedisCommandFrame& cmd);
             RedisCommandHandlerSetting* FindRedisCommandHandlerSetting(RedisCommandFrame& cmd);
