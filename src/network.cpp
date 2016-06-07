@@ -233,6 +233,7 @@ OP_NAMESPACE_BEGIN
         }
         m_service = new ChannelService(g_db->GetConf().max_open_files);
         m_service->SetThreadPoolSize(g_db->GetConf().thread_pool_size);
+        INFO_LOG("Thread pool size %d", g_db->GetConf().thread_pool_size);
         ServerLifecycleHandler lifecycle;
         m_service->RegisterLifecycleCallback(&lifecycle);
 

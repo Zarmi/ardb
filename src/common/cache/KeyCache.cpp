@@ -69,7 +69,7 @@ void KeyCache::LoadFromDisk(ardb::Engine* engine) {
     }
     DELETE(iter);
     ensureTTL();
-    INFO_LOG("Keys from disk loaded to KeyCache");
+    INFO_LOG("%d keys loaded from disk to KeyCache", sortedKeys.size());
 }
 
 void KeyCache::Put(const KeyType& kt) {
@@ -146,6 +146,11 @@ void KeyCache::ensureTTL() {
         sortedKeys.erase(sortedKeys.begin());
         ttlByKey.erase(entry.key);
     }
+}
+
+void KeyCache::DropAll() {
+    sortedKeys.clear();
+    ttlByKey.clear();
 }
 
 bool KeyCache::isOptimizedPattern(const KeyType &pattern) {
