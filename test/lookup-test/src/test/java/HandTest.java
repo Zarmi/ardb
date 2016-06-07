@@ -67,6 +67,39 @@ public class HandTest {
         testPattern(keys, jedis, "lol[fo3\\)\\(\\]\\[]");
     }
 
+    @Test
+    public void ttlTest() throws Exception {
+        try (Jedis jedis = createJedis()) {
+            final String[] fields = new String[]{"a", "b", "c"};
+            jedis.hmset("key1", genRandomMap(fields));
+            jedis.expire("key1", 6);
+            jedis.hmset("key2", genRandomMap(fields));
+            jedis.expire("key2", 3);
+            Thread.sleep(4000);
+            Set<String> set = jedis.keys("*");
+            Assert.assertFalse(set.contains("key2"));
+            Assert.assertTrue(set.contains("key1"));
+            Thread.sleep(3000);
+            Assert.assertFalse(jedis.keys("*").contains("key1"));
+            Assert.assertFalse(jedis.keys("*").contains("key2"));
+
+            final int numKeys = 10;
+            for (int i = 1; i <= numKeys; ++i) {
+                String key = "key" + i;
+                jedis.hmset(key, genRandomMap(fields));
+                jedis.expire(key, i);
+            }
+
+            Thread.sleep(500);
+            for (int i = 1; i <= numKeys; ++i) {
+                Thread.sleep(1000);
+                Assert.assertFalse(jedis.keys("*").contains("key" + i));
+                Assert.assertFalse(jedis.keys("key" + i + "*").contains("key" + i));
+            }
+        }
+    }
+
+
     @After
     public void afterTest() {
         flushAll();

@@ -8,7 +8,6 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -113,6 +112,22 @@ public class TestUtils {
             jedis.flushAll();
             Assert.assertEquals(Collections.emptySet(), jedis.keys("*"));
         }
+    }
+
+    public static char[] chars;
+    static {
+        chars = new char[52 + 10];
+        int c = 0;
+        for (char i = 'a'; i <= 'z'; ++i) {
+            chars[c++] = i;
+            chars[c++] = (char)(i - 'a' + 'A');
+        }
+        for (int i = 0; i < 10; ++i)
+            chars[c++] = (char)(i + '0');
+    }
+
+    public static String randomString(int len) {
+        return RandomStringUtils.random(len, chars);
     }
 
     public static Jedis createJedis() {

@@ -1,4 +1,3 @@
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
 import redis.clients.jedis.Jedis;
@@ -21,14 +20,14 @@ import static utils.TestUtils.*;
 public class StressTest {
     public static final int NUM_CLIENTS = 8;
     public static final int MAX_NUM_KEYS = 600_000;//with test config
-    public static final int ITERATIONS = 1_000_000;
+    public static final int ITERATIONS = 500_000;
     public static final int MAX_SIZE_DATA_IN_BYTES = 6500;
     public static final int MIN_SIZE_DATA_IN_BYTES = 4300;
 
     private ReadWriteLock lock = new ReentrantReadWriteLock(true);
     private Lock readLock = lock.readLock();
     private Lock writeLock = lock.writeLock();
-    private String MD5_BASE;
+    private volatile String MD5_BASE;
 
     @BeforeClass
     public static void init() {
@@ -54,7 +53,7 @@ public class StressTest {
 
         int prob = 10000 * NUM_CLIENTS;
         System.out.printf("Probably: %d %.2f\n", prob, 1.0 / prob);
-        MD5_BASE = RandomStringUtils.randomAscii(32);
+        MD5_BASE = randomString(32);
         ExecutorService service = Executors.newFixedThreadPool(NUM_CLIENTS);
         List<Future> futures = new ArrayList<>();
         for (int i = 0; i < NUM_CLIENTS; ++i)
@@ -118,8 +117,8 @@ public class StressTest {
         int valueLen = random.nextInt(MAX_SIZE_DATA_IN_BYTES - MIN_SIZE_DATA_IN_BYTES) + MIN_SIZE_DATA_IN_BYTES;
         int keyLen1 = random.nextInt(5) + 10;
         int keyLen2 = random.nextInt(5) + 10;
-        mp.put("data", RandomStringUtils.randomAscii(valueLen));
-        String key = RandomStringUtils.randomAscii(keyLen1) + MD5_BASE + RandomStringUtils.randomAscii(keyLen2);
+        mp.put("data", randomString(valueLen));
+        String key = randomString(keyLen1) + MD5_BASE + randomString(keyLen2);
         jedis.hmset(key, mp);
     }
 
