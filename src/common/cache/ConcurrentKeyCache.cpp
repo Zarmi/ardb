@@ -35,3 +35,8 @@ void ConcurrentKeyCache::ensureTTL() {
     ardb::LockGuard<ardb::SpinMutexLock> guard(ensureTtlLock);
     KeyCache::ensureTTL();
 }
+
+void ConcurrentKeyCache::DropAll() {
+    ardb::WriteLockGuard<ardb::SpinRWLock> guard(lock);
+    KeyCache::DropAll();
+}

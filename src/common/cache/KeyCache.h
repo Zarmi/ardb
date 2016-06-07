@@ -48,6 +48,7 @@ public:
     virtual void Delete(const KeyType& key);
     virtual void Expire(const KeyType &key, TtlType ttl);
     virtual size_t size();
+    virtual void DropAll();
 
     virtual ~KeyCache() {}
 

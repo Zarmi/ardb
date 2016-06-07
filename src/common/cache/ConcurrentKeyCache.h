@@ -15,6 +15,7 @@ class ConcurrentKeyCache: public KeyCache {
     void Delete(const KeyType& key);
     void Expire(const KeyType &key, TtlType ttl);
     size_t size();
+    void DropAll();
 protected:
     virtual void ensureTTL();
 

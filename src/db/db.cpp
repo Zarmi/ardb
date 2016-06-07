@@ -642,6 +642,7 @@ OP_NAMESPACE_BEGIN
         m_engine->DropNameSpace(ctx, ns);
         ctx.dirty += 1000; //makesure all
         TouchWatchedKeysOnFlush(ctx, ns);
+        m_key_cache->DropAll();
         return 0;
     }
     int Ardb::FlushAll(Context& ctx)
@@ -655,6 +656,7 @@ OP_NAMESPACE_BEGIN
         ctx.dirty += 1000;
         Data empty_ns; //indicate all namespaces
         TouchWatchedKeysOnFlush(ctx, empty_ns);
+        m_key_cache->DropAll();
         return 0;
     }
 
