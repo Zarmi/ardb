@@ -30,6 +30,7 @@
 #ifndef DB_UTILS_HPP_
 #define DB_UTILS_HPP_
 
+#include <common/cache/KeyCache.h>
 #include "common/common.hpp"
 #include "codec.hpp"
 #include "context.hpp"
@@ -75,10 +76,19 @@ OP_NAMESPACE_BEGIN
             DBWriterWorker* GetWorker();
         public:
             DBWriter(int workers = 1);
-            int Put(Context& ctx, const Data& ns, const Slice& key, const Slice& value);
-            int Put(Context& ctx, const KeyObject& k, const ValueObject& value);
+            virtual int Put(Context& ctx, const Data& ns, const Slice& key, const Slice& value);
+            virtual int Put(Context& ctx, const KeyObject& k, const ValueObject& value);
             void Stop();
             ~DBWriter();
+    };
+
+    class KeyCacheWriter: public DBWriter {
+    private:
+        KeyCache *keyCache;
+    public:
+        KeyCacheWriter(KeyCache* keyCache);
+        int Put(Context& ctx, const Data& ns, const Slice& key, const Slice& value);
+        int Put(Context& ctx, const KeyObject& k, const ValueObject& value);
     };
 
 OP_NAMESPACE_END

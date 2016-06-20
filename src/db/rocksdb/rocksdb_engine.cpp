@@ -399,6 +399,7 @@ OP_NAMESPACE_BEGIN
                     
                     uint64 ttl = meta.GetTTL();
                     uint64 epoch = get_current_epoch_millis();
+                    //не удаляем из KeyCache, потому что при любом действии с KeyCache итак удалим по ттлю
                     if (ttl != 0 && ttl <= epoch)
                         return true;
                       

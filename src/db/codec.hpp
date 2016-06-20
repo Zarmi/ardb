@@ -401,7 +401,7 @@ OP_NAMESPACE_BEGIN
             {
                 return getElement(0);
             }
-            int64_t GetTTL();
+            int64_t GetTTL() const;
             void SetTTL(int64_t v);
             double GetZSetScore()
             {

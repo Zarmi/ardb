@@ -36,7 +36,7 @@ public:
         }
 
         bool operator < (const CacheEntry& other) const {
-            return ttl < other.ttl || ttl == other.ttl && key < other.key;
+            return ttl < other.ttl || (ttl == other.ttl && key < other.key);
         }
     };
 

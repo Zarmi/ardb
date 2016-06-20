@@ -214,5 +214,35 @@ OP_NAMESPACE_BEGIN
         Stop();
     }
 
+    //KeyCacheWriter
+    //@author Ilya Peresadin <peresadin@loayltyplant.com>
+    KeyCacheWriter::KeyCacheWriter(KeyCache* keyCache):keyCache(keyCache) {}
+    int KeyCacheWriter::Put(Context &ctx, const Data &ns, const Slice &key, const Slice &value) {
+        Buffer buffer(const_cast<char*>(key.data()), 0, key.size());
+        KeyObject k;
+        if (!k.DecodePrefix(buffer, false))
+            FATAL_LOG("Failed to decode prefix in KeyCacheWriter");
+
+
+        ValueObject meta;
+        Buffer val_buffer(const_cast<char*>(value.data()), 0, value.size());
+        if (!meta.DecodeMeta(val_buffer))
+        {
+            ERROR_LOG("Failed to decode value of key:%s", k.GetKey().AsString().c_str());
+            return false;
+        }
+
+        int64_t ttl = meta.GetTTL();
+        keyCache->Put(KeyCache::CacheEntry(k.GetKey().AsString(), ttl));
+
+        return DBWriter::Put(ctx, ns, key, value);
+    }
+
+    int KeyCacheWriter::Put(Context &ctx, const KeyObject &k, const ValueObject &value) {
+        keyCache->Put(KeyCache::CacheEntry(k.GetKey().AsString(), value.GetTTL()));
+
+        return DBWriter::Put(ctx, k, value);
+    }
+
 OP_NAMESPACE_END
 

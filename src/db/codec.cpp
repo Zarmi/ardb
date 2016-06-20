@@ -376,9 +376,9 @@ OP_NAMESPACE_BEGIN
         return meta;
     }
 
-    int64_t ValueObject::GetTTL()
+    int64_t ValueObject::GetTTL() const
     {
-        return GetMetaObject().ttl;
+        return meta.ttl;
     }
     void ValueObject::SetTTL(int64_t v)
     {
